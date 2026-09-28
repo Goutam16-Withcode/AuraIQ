@@ -1,92 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #07090e;
-  --bg-secondary: #0d121f;
-  --bg-card: rgba(17, 24, 39, 0.7);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glass-hover: rgba(255, 255, 255, 0.18);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --canvas-bg: #eff2f6;
+  --card-bg: #ffffff;
+  --card-dark: #121418;
+  --card-dark-subtle: #191c22;
+  --border-light: rgba(0, 0, 0, 0.08);
+  --border-dark: rgba(255, 255, 255, 0.09);
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --accent-olive: #dcecb7;
+  --accent-olive-text: #2c3e10;
 }
 
 body {
-  background: radial-gradient(circle at 50% 0%, #171c2e 0%, #080b12 60%, #04060a 100%);
-  color: var(--text-main);
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  overflow-x: hidden;
 }
 
-/* Glassmorphism utilities */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-.glass-panel:hover {
-  border-color: var(--border-glass-hover);
-}
-
-.glass-card {
-  background: rgba(30, 41, 59, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
-}
-
-/* Glow effects */
-.glow-joy {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.4);
-}
-.glow-love {
-  box-shadow: 0 0 25px -5px rgba(236, 72, 153, 0.4);
-}
-.glow-sadness {
-  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.4);
-}
-.glow-anger {
-  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.4);
-}
-.glow-fear {
-  box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.4);
-}
-.glow-surprise {
-  box-shadow: 0 0 25px -5px rgba(20, 184, 166, 0.4);
-}
-
-/* Pulse animation */
-@keyframes pulseSlow {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: 0.85; }
-}
-
-.pulse-slow {
-  animation: pulseSlow 3s infinite ease-in-out;
-}
-
-/* Custom scrollbar */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.4);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(100, 116, 139, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(100, 116, 139, 0.4);
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
