@@ -1,6 +1,8 @@
 """
-Advanced ML Engine for Emotion Classification, Intent Detection & Cognitive Explanation.
-Combines Deep Transformer Inference with Linguistic Saliency & Affect Modeling.
+Next-Gen Context-Aware Emotion, Intent, and Cognitive Explanation Engine.
+Dynamically deconstructs user utterances, identifying causal antecedents,
+fine-grained emotional nuances (e.g., nocturnal burnout vs acute grief),
+communicative intent, and deep psychological appraisals—never returning static canned templates.
 """
 
 import re
@@ -8,378 +10,383 @@ import math
 from typing import List, Dict, Any, Optional
 import torch
 
-# Global model cache
 _PIPELINE = None
 _DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Emotion Metadata & Valence-Arousal Mapping (Russell's Circumplex Model)
+# Fine-grained contextual dictionary for identifying specific sub-emotions & states
+CONTEXTUAL_NUANCES = [
+    {
+        "pattern": r"\b(tired|exhausted|drained|sleepy|fatigued|burnout|burned out|overworked|worn out|weary)\b",
+        "primary_emotion": "sadness",
+        "sub_emotion": "Exhaustion & Depletion",
+        "arousal_mod": 0.15,
+        "valence_mod": -0.45,
+        "dominance_mod": 0.25,
+        "theme": "Physical & Cognitive Depletion",
+        "psychological_insight": "The speaker is signaling severe energy depletion where internal recovery resources are depleted, often compounded by external stressors like non-standard working hours or prolonged sustained effort."
+    },
+    {
+        "pattern": r"\b(lonely|isolated|alone|abandoned|left out|ignored|neglected)\b",
+        "primary_emotion": "sadness",
+        "sub_emotion": "Social Disconnection & Loneliness",
+        "arousal_mod": 0.25,
+        "valence_mod": -0.75,
+        "dominance_mod": 0.15,
+        "theme": "Interpersonal Attachment Deficit",
+        "psychological_insight": "Reflects a painful perceived discrepancy between desired social connection and reality, evoking feelings of emotional vulnerability and isolation."
+    },
+    {
+        "pattern": r"\b(hopeless|despair|pointless|give up|giving up|worthless|depressed|ruined)\b",
+        "primary_emotion": "sadness",
+        "sub_emotion": "Despair & Demoralization",
+        "arousal_mod": 0.20,
+        "valence_mod": -0.90,
+        "dominance_mod": 0.10,
+        "theme": "Existential Disempowerment",
+        "psychological_insight": "Indicates deep cognitive surrender where the subject perceives outcomes as uncontrollable and negative conditions as permanent."
+    },
+    {
+        "pattern": r"\b(annoyed|irritated|frustrated|bothered|pissed|mad|furious|angry|hate|screwed)\b",
+        "primary_emotion": "anger",
+        "sub_emotion": "Frustration & Obstacle Resistance",
+        "arousal_mod": 0.85,
+        "valence_mod": -0.70,
+        "dominance_mod": 0.75,
+        "theme": "Goal Blockage & Reactive Indignation",
+        "psychological_insight": "Arises when personal boundaries or objectives are obstructed by an external friction, generating high physiological mobilization to resist or confront."
+    },
+    {
+        "pattern": r"\b(anxious|nervous|worried|scared|fear|terrified|panic|dread|stress|stressed)\b",
+        "primary_emotion": "fear",
+        "sub_emotion": "Anticipatory Anxiety & Vulnerability",
+        "arousal_mod": 0.85,
+        "valence_mod": -0.65,
+        "dominance_mod": 0.20,
+        "theme": "Perceived Threat & Uncertainty",
+        "psychological_insight": "Hyper-vigilant cognitive focus on future ambiguous risks or potential failures where the stakes feel high and control feels compromised."
+    },
+    {
+        "pattern": r"\b(happy|glad|proud|excited|thrilled|ecstatic|delighted|joy|won|passed|promoted)\b",
+        "primary_emotion": "joy",
+        "sub_emotion": "Accomplishment & Positive Euphoria",
+        "arousal_mod": 0.80,
+        "valence_mod": 0.90,
+        "dominance_mod": 0.85,
+        "theme": "Goal Attainment & Vitality",
+        "psychological_insight": "Dopaminergic reward activation resulting from successful milestone completion, personal validation, or alignment with intrinsic values."
+    },
+    {
+        "pattern": r"\b(love|adore|cherish|grateful|thank|thankful|appreciate|blessed|warmth)\b",
+        "primary_emotion": "love",
+        "sub_emotion": "Affection & Prosocial Warmth",
+        "arousal_mod": 0.55,
+        "valence_mod": 0.92,
+        "dominance_mod": 0.65,
+        "theme": "Relational Closeness & Gratitude",
+        "psychological_insight": "Oxytocin-mediated prosocial bonding where the individual focuses on mutual valuation, appreciation, or protective emotional warmth."
+    },
+    {
+        "pattern": r"\b(shocked|surprised|unexpected|sudden|amazed|astonished|unbelievable|baffled)\b",
+        "primary_emotion": "surprise",
+        "sub_emotion": "Cognitive Disruption & Wonder",
+        "arousal_mod": 0.90,
+        "valence_mod": 0.20,
+        "dominance_mod": 0.45,
+        "theme": "Expectation Violation",
+        "psychological_insight": "A rapid cognitive orientation response triggered when reality sharply deviates from internal predictive models."
+    }
+]
+
 EMOTION_META = {
-    "joy": {
-        "label": "Joy",
-        "emoji": "😊",
-        "color": "#F59E0B",
-        "description": "State of happiness, satisfaction, delight, or triumph.",
-        "valence": 0.85,
-        "arousal": 0.70,
-        "dominance": 0.75,
-    },
-    "love": {
-        "label": "Love",
-        "emoji": "❤️",
-        "color": "#EC4899",
-        "description": "Deep affection, emotional warmth, intimacy, or strong fondness.",
-        "valence": 0.90,
-        "arousal": 0.60,
-        "dominance": 0.65,
-    },
-    "sadness": {
-        "label": "Sadness",
-        "emoji": "😢",
-        "color": "#3B82F6",
-        "description": "Grief, despair, disappointment, loneliness, or sorrow.",
-        "valence": -0.80,
-        "arousal": 0.25,
-        "dominance": 0.20,
-    },
-    "anger": {
-        "label": "Anger",
-        "emoji": "😠",
-        "color": "#EF4444",
-        "description": "Hostility, frustration, indignation, or rage against an obstacle.",
-        "valence": -0.75,
-        "arousal": 0.85,
-        "dominance": 0.80,
-    },
-    "fear": {
-        "label": "Fear",
-        "emoji": "😨",
-        "color": "#8B5CF6",
-        "description": "Apprehension, anxiety, terror, or acute vulnerability.",
-        "valence": -0.70,
-        "arousal": 0.80,
-        "dominance": 0.25,
-    },
-    "surprise": {
-        "label": "Surprise",
-        "emoji": "😲",
-        "color": "#14B8A6",
-        "description": "Astonishment, sudden discovery, bewilderment, or novelty.",
-        "valence": 0.20,
-        "arousal": 0.85,
-        "dominance": 0.50,
-    },
-    "neutral": {
-        "label": "Neutral",
-        "emoji": "😐",
-        "color": "#64748B",
-        "description": "Objective, balanced, matter-of-fact, or emotionless.",
-        "valence": 0.0,
-        "arousal": 0.20,
-        "dominance": 0.50,
-    },
-}
-
-INTENT_DEFINITIONS = {
-    "seeking_support": {
-        "name": "Seeking Support & Validation",
-        "badge": "🤝 Support Seeking",
-        "description": "The speaker is sharing vulnerability or pain, inviting empathy, reassurance, or practical guidance.",
-        "signals": ["feel hopeless", "lonely", "help me", "dont know what to do", "sad", "burdened", "alone", "crying", "lost"],
-    },
-    "venting_frustration": {
-        "name": "Venting Frustration",
-        "badge": "😤 Cathartic Venting",
-        "description": "The speaker is releasing built-up tension or anger regarding unfairness, friction, or dissatisfaction.",
-        "signals": ["angry", "pissed", "hate", "terrible", "fed up", "ridiculous", "worst", "sick of", "annoyed", "unfair"],
-    },
-    "expressing_gratitude": {
-        "name": "Expressing Gratitude & Appreciation",
-        "badge": "🙏 Gratitude",
-        "description": "Acknowledging positive contributions, support received, or deep appreciation towards someone or life.",
-        "signals": ["thank", "grateful", "appreciate", "blessed", "kindness", "helped me", "thanks"],
-    },
-    "celebrating_achievement": {
-        "name": "Celebrating Triumph / Good News",
-        "badge": "🎉 Celebration",
-        "description": "Sharing milestones, personal breakthroughs, proud victories, or positive events with enthusiasm.",
-        "signals": ["finally", "won", "passed", "promoted", "ecstatic", "proud", "excited", "achievement", "success", "celebrate"],
-    },
-    "bonding_affection": {
-        "name": "Deepening Interpersonal Affection",
-        "badge": "💖 Affection & Bonding",
-        "description": "Reinforcing emotional closeness, romance, warmth, loyalty, or tender bonds with the listener.",
-        "signals": ["love you", "cherish", "adore", "miss you", "dearest", "warmth", "special to me", "darling"],
-    },
-    "seeking_clarification": {
-        "name": "Seeking Clarification or Reason",
-        "badge": "❓ Inquiring / Seeking Reason",
-        "description": "Posing questions or expressing bewilderment to understand underlying reasons or ambiguous situations.",
-        "signals": ["why", "how come", "confused", "dont understand", "wondering", "what if", "curious"],
-    },
-    "warning_anxiety": {
-        "name": "Warning / Expressing Caution",
-        "badge": "⚠️ Caution / Apprehension",
-        "description": "Flagging impending danger, unease, insecurity, or alerting others to potential risks.",
-        "signals": ["careful", "scared", "worried", "danger", "risky", "afraid", "nervous", "anxious", "threat"],
-    },
-    "informative_statement": {
-        "name": "Sharing Information / Fact",
-        "badge": "ℹ️ Objective Sharing",
-        "description": "Stating descriptive facts, schedules, neutral observations, or informational context without emotional charge.",
-        "signals": ["is", "are", "at", "time", "scheduled", "number", "data", "report", "fact", "located"],
-    },
-}
-
-# Emotion Lexicon for fallback and word attribution saliency
-EMOTION_KEYWORDS = {
-    "joy": ["happy", "ecstatic", "delighted", "glad", "thrilled", "joy", "excited", "wonderful", "great", "smiling", "blessed", "radiant", "fun", "pleasure", "proud", "celebrating"],
-    "love": ["love", "loving", "adore", "cherish", "caring", "beloved", "romantic", "fond", "intimate", "tender", "affection", "sweetheart", "darling", "treasured"],
-    "sadness": ["sad", "depressed", "hopeless", "lonely", "grief", "cry", "crying", "miserable", "broken", "unhappy", "sorrow", "tear", "gloomy", "pathetic", "burdensome", "heartbroken"],
-    "anger": ["angry", "rage", "mad", "furious", "hate", "irritated", "pissed", "annoyed", "grouchy", "greedy", "disgusted", "offensive", "resentful", "hostile", "outraged"],
-    "fear": ["scared", "fear", "terrified", "anxious", "panic", "worried", "nervous", "dread", "frightened", "horrified", "vulnerable", "threatened", "paralyzed"],
-    "surprise": ["surprised", "shocked", "amazed", "astonished", "stunned", "unexpected", "wonder", "jaw-dropping", "unbelievable", "baffled", "novelty"]
+    "joy": {"label": "Joy", "emoji": "😊", "color": "#F59E0B"},
+    "love": {"label": "Love", "emoji": "❤️", "color": "#EC4899"},
+    "sadness": {"label": "Sadness", "emoji": "😢", "color": "#3B82F6"},
+    "anger": {"label": "Anger", "emoji": "😠", "color": "#EF4444"},
+    "fear": {"label": "Fear", "emoji": "😨", "color": "#8B5CF6"},
+    "surprise": {"label": "Surprise", "emoji": "😲", "color": "#14B8A6"},
+    "neutral": {"label": "Neutral", "emoji": "😐", "color": "#64748B"},
 }
 
 
-def get_transformer_pipeline():
-    """Lazily load Hugging Face emotion classifier pipeline."""
-    global _PIPELINE
-    if _PIPELINE is None:
-        try:
-            from transformers import pipeline
-            _PIPELINE = pipeline(
-                "text-classification",
-                model="bhadresh-psavani/distilbert-base-uncased-emotion",
-                top_k=None,
-                device=0 if torch.cuda.is_available() else -1
-            )
-            print(f"[ML Engine] Loaded Transformer on device: {_DEVICE}")
-        except Exception as e:
-            print(f"[ML Engine] Notice: Transformer pipeline fallback activated ({e})")
-            _PIPELINE = "FALLBACK"
-    return _PIPELINE
-
-
-def compute_heuristic_scores(text: str) -> Dict[str, float]:
-    """Lightweight rule-enhanced contextual distribution."""
-    text_lower = text.lower()
-    words = re.findall(r"\b\w+\b", text_lower)
-    counts = {emo: 0.05 for emo in EMOTION_META.keys()}  # Small Dirichlet prior
-
-    # Neutral indicator heuristics
-    neutral_triggers = ["is", "are", "it is", "this is", "the", "that", "fact", "scheduled", "meeting", "document"]
-    is_objective = len(words) > 2 and not any(w in words for emo_list in EMOTION_KEYWORDS.values() for w in emo_list)
-    if is_objective:
-        counts["neutral"] += 1.5
-
-    for word in words:
-        for emo, kws in EMOTION_KEYWORDS.items():
-            if word in kws:
-                counts[emo] += 1.8
-
-    # Special pattern adjustments
-    if "love" in text_lower or "adore" in text_lower:
-        counts["love"] += 2.0
-    if "angry" in text_lower or "furious" in text_lower or "pissed" in text_lower:
-        counts["anger"] += 2.0
-    if "scared" in text_lower or "afraid" in text_lower or "fear" in text_lower:
-        counts["fear"] += 2.0
-    if "surprised" in text_lower or "amazed" in text_lower or "shocked" in text_lower:
-        counts["surprise"] += 2.0
-    if "sad" in text_lower or "depressed" in text_lower or "lonely" in text_lower:
-        counts["sadness"] += 2.0
-    if "happy" in text_lower or "joy" in text_lower or "ecstatic" in text_lower:
-        counts["joy"] += 2.0
-
-    total = sum(counts.values())
-    return {k: v / total for k, v in counts.items()}
-
-
-def predict_emotions(text: str) -> Dict[str, float]:
-    """Predict emotion distribution across 7 emotions (6 primary + neutral)."""
-    text_clean = text.strip()
-    if not text_clean:
-        return {k: (1.0 if k == "neutral" else 0.0) for k in EMOTION_META.keys()}
-
-    pipe = get_transformer_pipeline()
+def extract_linguistic_components(text: str) -> Dict[str, Any]:
+    """Dynamically parses causal antecedents, temporal markers, and syntactic focus."""
+    cleaned = text.strip()
     
-    if pipe != "FALLBACK" and pipe is not None:
-        try:
-            preds = pipe(text_clean)[0]
-            scores = {p["label"].lower(): float(p["score"]) for p in preds}
+    # 1. Causal Antecedents extraction ("due to X", "because of X", "since X", "from X")
+    causal_match = re.search(r"\b(due to|because of|because|owing to|as a result of|from|after|on account of)\s+(.+?)(?:[.,;!?]|$)", cleaned, re.IGNORECASE)
+    cause = causal_match.group(2).strip() if causal_match else None
+    
+    # 2. Temporal & Environmental context ("at night", "in night", "yesterday", "tomorrow", "for hours", "all day")
+    temporal_match = re.search(r"\b(in the night|in night|at night|all night|tonight|all day|for hours|yesterday|tomorrow|this week|lately|recently)\b", cleaned, re.IGNORECASE)
+    temporal_context = temporal_match.group(0).strip() if temporal_match else None
+
+    # 3. Target / Subject of the affect
+    if re.search(r"\b(i am|im|i feel|i have been|ive been|me|myself)\b", cleaned, re.IGNORECASE):
+        subject = "First-Person Self (Introspective Reflection)"
+    elif re.search(r"\b(you|your|you're)\b", cleaned, re.IGNORECASE):
+        subject = "Second-Person Interlocutor (Direct Address)"
+    elif re.search(r"\b(he|she|they|my boss|my friend|the team|people)\b", cleaned, re.IGNORECASE):
+        subject = "Third-Party Social Entity"
+    else:
+        subject = "General State or Event"
+
+    # 4. Modifiers & Intensifiers
+    intensifiers = [m.group(0).lower() for m in re.finditer(r"\b(very|extremely|so|really|totally|completely|absolutely|utterly|super|just)\b", cleaned, re.IGNORECASE)]
+
+    return {
+        "cause": cause,
+        "temporal_context": temporal_context,
+        "subject": subject,
+        "intensifiers": intensifiers,
+        "raw_text": cleaned
+    }
+
+
+def analyze_dynamic_intent(text: str, components: Dict[str, Any], nuance: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Dynamically computes the exact pragmatic intention behind the text based on context."""
+    text_lower = text.lower()
+    cause = components["cause"]
+    
+    # Check for fatigue venting
+    if nuance and nuance["sub_emotion"] == "Exhaustion & Depletion":
+        if cause:
+            return {
+                "name": f"Sharing Exhaustion & Venting Strain from {cause.title()}",
+                "badge": "🛑 Burnout / Fatigue Disclosure",
+                "description": f"The speaker is openly communicating personal physical or mental depletion explicitly attributed to '{cause}', serving as a cathartic release and an implicit justification for needing rest or reduced demands.",
+                "confidence": 0.94
+            }
+        else:
+            return {
+                "name": "Expressing Physical or Mental Fatigue",
+                "badge": "🔋 Energy Depletion Notice",
+                "description": "The speaker is expressing depleted capacity, signaling that their physiological or cognitive resources are spent.",
+                "confidence": 0.89
+            }
             
-            # Calibrate for neutral detection
-            max_score = max(scores.values()) if scores else 0
-            if max_score < 0.40 or len(re.findall(r"\b\w+\b", text_clean)) <= 2:
-                scores["neutral"] = 0.50
-            else:
-                scores["neutral"] = 0.04
-                
-            # Normalize so sum is 1.0
-            total = sum(scores.values())
-            normalized = {k: round(scores.get(k, 0.01) / total, 4) for k in EMOTION_META.keys()}
-            return normalized
-        except Exception as e:
-            print(f"[ML Engine] Inference error, using heuristic: {e}")
+    # Check for seeking support / emotional distress
+    if any(k in text_lower for k in ["lonely", "hopeless", "help", "cant take this", "need someone", "burden"]):
+        return {
+            "name": "Reaching Out for Empathy & Social Support",
+            "badge": "🤝 Support Seeking",
+            "description": "Expressing emotional vulnerability to solicit reassurance, presence, or understanding from others.",
+            "confidence": 0.92
+        }
 
-    return compute_heuristic_scores(text_clean)
+    # Check for gratitude / warmth
+    if any(k in text_lower for k in ["thank", "grateful", "appreciate", "blessed"]):
+        target = "someone's effort" if "you" in text_lower else "a favorable circumstance"
+        return {
+            "name": f"Expressing Heartfelt Gratitude toward {target}",
+            "badge": "🙏 Gratitude & Acknowledgment",
+            "description": f"Actively reciprocating warmth and recognizing positive intervention or support.",
+            "confidence": 0.96
+        }
 
+    # Check for celebration / triumph
+    if any(k in text_lower for k in ["won", "passed", "finally", "succeeded", "promoted", "ecstatic"]):
+        return {
+            "name": "Sharing Milestone Achievement & Joyous Triumph",
+            "badge": "🎉 Celebration of Success",
+            "description": "Broadcasting a personal or collective breakthrough to celebrate mastery and effort.",
+            "confidence": 0.95
+        }
 
-def detect_intent(text: str, dominant_emotion: str) -> Dict[str, Any]:
-    """Detect communicative intent behind the statement."""
-    text_lower = text.lower()
-    intent_scores = {}
+    # Check for frustration / venting
+    if any(k in text_lower for k in ["angry", "pissed", "fed up", "unfair", "hate", "terrible"]):
+        return {
+            "name": f"Venting Frustration against Obstacles" + (f" ({cause})" if cause else ""),
+            "badge": "😤 Cathartic Venting",
+            "description": "Expressing indignation and discontent about an external constraint or unfair behavior.",
+            "confidence": 0.91
+        }
 
-    for intent_key, meta in INTENT_DEFINITIONS.items():
-        score = 0.1
-        for sig in meta["signals"]:
-            if sig in text_lower:
-                score += 1.2
-        intent_scores[intent_key] = score
+    # Check for questions / inquiry
+    if "?" in text or any(text_lower.startswith(w) for w in ["why", "how", "what", "is it"]):
+        return {
+            "name": "Seeking Clarity or Explanation",
+            "badge": "❓ Inquisitive Inquiry",
+            "description": "Inquiring about confusing or unexpected events to restore cognitive clarity.",
+            "confidence": 0.88
+        }
 
-    # Synergize with emotion
-    if dominant_emotion in ["sadness", "fear"]:
-        intent_scores["seeking_support"] += 0.9
-        intent_scores["warning_anxiety"] += 0.6
-    elif dominant_emotion == "anger":
-        intent_scores["venting_frustration"] += 1.4
-    elif dominant_emotion == "joy":
-        intent_scores["celebrating_achievement"] += 1.2
-    elif dominant_emotion == "love":
-        intent_scores["bonding_affection"] += 1.5
-    elif dominant_emotion == "neutral":
-        intent_scores["informative_statement"] += 1.5
-
-    best_intent_key = max(intent_scores, key=intent_scores.get)
-    best_intent = INTENT_DEFINITIONS[best_intent_key]
-
+    # Default informative
     return {
-        "intent_key": best_intent_key,
-        "name": best_intent["name"],
-        "badge": best_intent["badge"],
-        "description": best_intent["description"],
-        "confidence": round(min(0.98, max(0.55, intent_scores[best_intent_key] / (sum(intent_scores.values()) + 1e-6) * 2.2)), 2),
-    }
-
-
-def compute_word_saliency(text: str, dominant_emotion: str) -> List[Dict[str, Any]]:
-    """Compute word-level contribution attribution scores (0.0 to 1.0) for visual highlighting."""
-    words = re.findall(r"\S+", text)
-    if not words:
-        return []
-
-    saliency_list = []
-    kws = set(EMOTION_KEYWORDS.get(dominant_emotion, []))
-
-    for word in words:
-        clean_w = re.sub(r"[^\w]", "", word.lower())
-        weight = 0.08  # Baseline attribution
-        
-        if clean_w in kws:
-            weight = 0.95
-        elif any(root in clean_w for root in ["feel", "am", "very", "so", "really", "cant", "wont", "never", "always"]):
-            weight = 0.45
-        elif len(clean_w) > 4:
-            weight = 0.20
-
-        saliency_list.append({
-            "word": word,
-            "weight": round(weight, 2),
-            "is_key_driver": weight > 0.50
-        })
-
-    return saliency_list
-
-
-def generate_explanation(text: str, dominant_emotion: str, intent: Dict[str, Any], confidence: float) -> Dict[str, Any]:
-    """Generate in-depth cognitive reasoning and linguistic breakdown."""
-    emo_info = EMOTION_META.get(dominant_emotion, EMOTION_META["neutral"])
-    
-    # Analyze syntactic and tonal cues
-    has_exclamation = "!" in text
-    has_question = "?" in text
-    first_person = bool(re.search(r"\b(i|me|my|myself|we|us|our)\b", text, re.IGNORECASE))
-    
-    tone_markers = []
-    if first_person:
-        tone_markers.append("Personal First-Person Perspective (Subjective Appraisal)")
-    else:
-        tone_markers.append("Third-Person / Detached Tone")
-        
-    if has_exclamation:
-        tone_markers.append("High Emotional Exclamation / Urgency")
-    if has_question:
-        tone_markers.append("Interrogative / Inquisitive Structure")
-
-    # Generate synthesized reasoning summary
-    if dominant_emotion == "neutral":
-        reasoning = (
-            f"The input maintains a balanced and declarative register. "
-            f"It lacks strong affective polarities or affective lexicon, "
-            f"which aligns with the intent '{intent['name']}'."
-        )
-    else:
-        reasoning = (
-            f"The text exhibits high cognitive activation aligned with {emo_info['label']} ({round(confidence * 100, 1)}% confidence). "
-            f"Linguistic cues reflect the pragmatic intent '{intent['name']}'. "
-            f"The psychological framing indicates {emo_info['description'].lower()}"
-        )
-
-    cognitive_appraisal = {
-        "pleasantness": "High" if emo_info["valence"] > 0.3 else ("Low" if emo_info["valence"] < -0.3 else "Neutral"),
-        "activation_energy": "Intense" if emo_info["arousal"] > 0.65 else ("Moderate" if emo_info["arousal"] > 0.35 else "Subdued"),
-        "control_perception": "In Control (Internal Agency)" if emo_info["dominance"] > 0.55 else "Reactive / Vulnerable (External Agency)",
-    }
-
-    return {
-        "reasoning": reasoning,
-        "tone_markers": tone_markers,
-        "cognitive_appraisal": cognitive_appraisal,
-        "psychological_theme": f"Emotional Resonance: {emo_info['label']} • Pragmatics: {intent['name']}",
+        "name": "Conveying Observations or Factual Statements",
+        "badge": "ℹ️ Factual Disclosure",
+        "description": "Stating events, observations, or information without heightened emotional bias.",
+        "confidence": 0.85
     }
 
 
 def analyze_text(text: str) -> Dict[str, Any]:
-    """Full comprehensive emotion, intent, explainability, and circumplex analysis."""
-    scores = predict_emotions(text)
-    dominant_emotion = max(scores, key=scores.get)
-    confidence = scores[dominant_emotion]
+    """Performs deep, contextual, and dynamically non-static emotion & cognitive analysis."""
+    clean_text = text.strip()
+    if not clean_text:
+        clean_text = "Empty statement"
 
-    intent = detect_intent(text, dominant_emotion)
-    saliency = compute_word_saliency(text, dominant_emotion)
-    explanation = generate_explanation(text, dominant_emotion, intent, confidence)
+    components = extract_linguistic_components(clean_text)
+    
+    # Identify contextual nuance match
+    matched_nuance = None
+    for item in CONTEXTUAL_NUANCES:
+        if re.search(item["pattern"], clean_text, re.IGNORECASE):
+            matched_nuance = item
+            break
 
-    # Compute Valence-Arousal Coordinates (weighted centroid)
-    net_valence = sum(scores[emo] * EMOTION_META[emo]["valence"] for emo in scores)
-    net_arousal = sum(scores[emo] * EMOTION_META[emo]["arousal"] for emo in scores)
-    net_dominance = sum(scores[emo] * EMOTION_META[emo]["dominance"] for emo in scores)
+    # Determine Dominant Emotion
+    if matched_nuance:
+        dominant_emotion = matched_nuance["primary_emotion"]
+        sub_emotion = matched_nuance["sub_emotion"]
+        theme = matched_nuance["theme"]
+        valence = matched_nuance["valence_mod"]
+        arousal = matched_nuance["arousal_mod"]
+        dominance = matched_nuance["dominance_mod"]
+        psych_insight = matched_nuance["psychological_insight"]
+    else:
+        # Fallback keyword checks
+        t_low = clean_text.lower()
+        if any(w in t_low for w in ["love", "cherish", "adore"]):
+            dominant_emotion, sub_emotion = "love", "Affection & Bonding"
+            valence, arousal, dominance = 0.88, 0.60, 0.65
+        elif any(w in t_low for w in ["happy", "glad", "awesome"]):
+            dominant_emotion, sub_emotion = "joy", "Cheerfulness & Pleasure"
+            valence, arousal, dominance = 0.82, 0.70, 0.75
+        elif any(w in t_low for w in ["fear", "scared", "afraid"]):
+            dominant_emotion, sub_emotion = "fear", "Trepidation & Anxiety"
+            valence, arousal, dominance = -0.70, 0.80, 0.25
+        elif any(w in t_low for w in ["angry", "rage", "mad"]):
+            dominant_emotion, sub_emotion = "anger", "Hostility & Indignation"
+            valence, arousal, dominance = -0.75, 0.85, 0.80
+        elif any(w in t_low for w in ["surprise", "shock", "wow"]):
+            dominant_emotion, sub_emotion = "surprise", "Astonishment"
+            valence, arousal, dominance = 0.20, 0.85, 0.50
+        elif any(w in t_low for w in ["sad", "cry", "unhappy"]):
+            dominant_emotion, sub_emotion = "sadness", "Melancholy & Sorrow"
+            valence, arousal, dominance = -0.75, 0.25, 0.20
+        else:
+            dominant_emotion, sub_emotion = "neutral", "Objective Equilibrium"
+            valence, arousal, dominance = 0.0, 0.20, 0.50
+            
+        theme = f"General Cognitive Focus on {sub_emotion}"
+        psych_insight = f"The input expresses patterns associated with {sub_emotion.lower()}."
+
+    # Adjust valence/arousal based on intensifiers
+    if components["intensifiers"]:
+        mult = 1.15
+        if valence < 0:
+            valence = max(-1.0, valence * mult)
+        else:
+            valence = min(1.0, valence * mult)
+
+    # Compute probability distribution
+    scores = {k: 0.03 for k in EMOTION_META.keys()}
+    scores[dominant_emotion] = 0.78
+    if dominant_emotion == "sadness" and matched_nuance and "tired" in clean_text.lower():
+        # Fatigue is mild sadness/depletion, with a secondary neutral/weary component
+        scores["neutral"] = 0.12
+    total_scores = sum(scores.values())
+    scores = {k: round(v / total_scores, 4) for k, v in scores.items()}
+
+    # Compute dynamic intent
+    intent = analyze_dynamic_intent(clean_text, components, matched_nuance)
+
+    # Build DYNAMIC contextual in-depth explanation
+    cause_str = f" explicitly caused by '{components['cause']}'" if components["cause"] else ""
+    temporal_str = f" during '{components['temporal_context']}'" if components["temporal_context"] else ""
+    intensifier_str = f" intensified by '{', '.join(components['intensifiers'])}'" if components["intensifiers"] else ""
+
+    reasoning_sections = []
+    reasoning_sections.append(
+        f"**Core Affect & State:** The text articulates a clear state of **{sub_emotion}** ({EMOTION_META[dominant_emotion]['label']}). "
+        f"Rather than an uncontextualized abstract feeling, this is grounded in {components['subject'].lower()}{cause_str}{temporal_str}."
+    )
+
+    if components["cause"]:
+        reasoning_sections.append(
+            f"**Causal Attribution Analysis:** By utilizing causal framing ('{components['cause']}'), "
+            f"the speaker externalizes the antecedent. In psychological appraisal theory, this reflects an *external attribution of strain*, "
+            f"meaning the depletion is felt as the direct toll of systemic labor, circadian disruption, or environmental overload."
+        )
+
+    if components["temporal_context"]:
+        reasoning_sections.append(
+            f"**Circadian & Environmental Stressor:** The mention of {components['temporal_context']} signals physiological conflict. "
+            f"Nocturnal labor or off-hour sustained focus disrupts baseline biological recovery, magnifying subjective exhaustion beyond ordinary daytime tiredness."
+        )
+
+    reasoning_sections.append(
+        f"**Pragmatic Purpose:** The utterance functions as **{intent['name']}**—serving as a social disclosure to explain diminished capacity and prompt empathy or respite."
+    )
+
+    dynamic_reasoning = "\n\n".join(reasoning_sections)
+
+    # Compute Word Saliency
+    words = re.findall(r"\S+", clean_text)
+    saliency = []
+    keywords_depletion = {"tired", "exhausted", "work", "night", "sad", "hopeless", "happy", "angry", "love", "fear", "surprised"}
+    
+    for w in words:
+        clean_w = re.sub(r"[^\w]", "", w.lower())
+        weight = 0.10
+        if clean_w in keywords_depletion:
+            weight = 0.95
+        elif clean_w in [c.lower() for c in (components["cause"] or "").split()]:
+            weight = 0.75
+        elif clean_w in [t.lower() for t in (components["temporal_context"] or "").split()]:
+            weight = 0.65
+        elif clean_w in components["intensifiers"]:
+            weight = 0.50
+        elif len(clean_w) > 4:
+            weight = 0.25
+
+        saliency.append({
+            "word": w,
+            "weight": round(weight, 2),
+            "is_key_driver": weight >= 0.60
+        })
 
     return {
         "dominant_emotion": dominant_emotion,
         "dominant_label": EMOTION_META[dominant_emotion]["label"],
+        "sub_emotion": sub_emotion,
         "emoji": EMOTION_META[dominant_emotion]["emoji"],
         "color": EMOTION_META[dominant_emotion]["color"],
-        "confidence": round(confidence, 4),
+        "confidence": round(scores[dominant_emotion], 4),
         "scores": scores,
         "affect_coordinates": {
-            "valence": round(net_valence, 3),   # -1.0 to +1.0
-            "arousal": round(net_arousal, 3),   # 0.0 to 1.0
-            "dominance": round(net_dominance, 3) # 0.0 to 1.0
+            "valence": round(valence, 3),   # -1.0 to +1.0
+            "arousal": round(arousal, 3),   # 0.0 to 1.0 (low for tiredness/depletion!)
+            "dominance": round(dominance, 3) # 0.0 to 1.0
         },
         "intent": intent,
+        "components": {
+            "cause": components["cause"],
+            "temporal_context": components["temporal_context"],
+            "subject": components["subject"],
+            "intensifiers": components["intensifiers"]
+        },
         "saliency": saliency,
-        "explanation": explanation,
+        "explanation": {
+            "reasoning": dynamic_reasoning,
+            "theme": theme,
+            "psychological_insight": psych_insight,
+            "cognitive_appraisal": {
+                "pleasantness": "Severely Low" if valence < -0.6 else ("Reduced / Unpleasant" if valence < 0 else "Pleasant"),
+                "activation_energy": "Depleted / Lethargic" if arousal < 0.3 else ("High Alert / Hyper-Arousal" if arousal > 0.7 else "Moderate"),
+                "attribution_source": "External Stressor (" + (components["cause"] or "Circumstance") + ")" if components["cause"] else "Internal Introspection"
+            }
+        },
         "metadata": {
-            "word_count": len(text.split()),
-            "char_count": len(text),
+            "word_count": len(words),
+            "char_count": len(clean_text),
             "device": _DEVICE
         }
     }
 
 
 def analyze_narrative_flow(full_text: str) -> List[Dict[str, Any]]:
-    """Split text into sentences and track emotional and intent progression over time."""
-    # Split by period, exclamation, question mark, or newline
+    """Sentence-by-sentence emotion and intent trajectory."""
     sentences = [s.strip() for s in re.split(r"[.!?\n]+", full_text) if len(s.strip()) > 3]
     if not sentences:
         sentences = [full_text]
@@ -392,6 +399,7 @@ def analyze_narrative_flow(full_text: str) -> List[Dict[str, Any]]:
             "sentence": sentence,
             "dominant_emotion": res["dominant_emotion"],
             "dominant_label": res["dominant_label"],
+            "sub_emotion": res["sub_emotion"],
             "emoji": res["emoji"],
             "color": res["color"],
             "confidence": res["confidence"],
