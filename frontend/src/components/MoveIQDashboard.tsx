@@ -15,34 +15,56 @@ import {
   Crosshair,
   Volume2,
   Box,
-  Truck,
-  Wallet,
-  TrendingUp,
+  Layers,
+  Compass,
+  Activity,
+  Cpu,
   LayoutDashboard,
-  AlertOctagon,
+  Zap,
+  Moon,
   X,
   Sparkles,
-  Target,
-  BrainCircuit,
-  Compass
+  AlertCircle,
+  Clock,
+  Target
 } from 'lucide-react';
-import TruckIllustration from './TruckIllustration';
+import CognitiveWaveIllustration from './CognitiveWaveIllustration';
+import BatchStudio from './BatchStudio';
+import AffectCircumplex from './AffectCircumplex';
+import EmotionRadar from './EmotionRadar';
+import NarrativeFlowView from './NarrativeFlowView';
+import ArchitectureLab from './ArchitectureLab';
 import { analyzeTextLocally } from '@/lib/analyzer';
-import { EmotionAnalysisResult } from '@/lib/types';
+import { EmotionAnalysisResult, EmotionKey } from '@/lib/types';
+
+interface TableRowItem {
+  id: string;
+  speaker: string;
+  utterance: string;
+  subEmotion: string;
+  primaryEmotion: EmotionKey;
+  cause: string;
+  intent: string;
+  statusDot: string;
+  valence: number;
+  arousal: number;
+}
 
 export default function MoveIQDashboard() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [orderFilter, setOrderFilter] = useState('Assigned');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'batch' | 'circumplex' | 'narrative' | 'lab'>('dashboard');
+  const [activeFilter, setActiveFilter] = useState('Assigned');
   const [searchVal, setSearchVal] = useState('');
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
-  const [inputText, setInputText] = useState('I am tried due to work in night');
+  const [currentText, setCurrentText] = useState('I am tried due to work in night');
   const [analysisResult, setAnalysisResult] = useState<EmotionAnalysisResult>(() =>
     analyzeTextLocally('I am tried due to work in night')
   );
 
   const runAnalysis = (text: string) => {
-    setInputText(text);
-    const res = analyzeTextLocally(text);
+    const clean = text.trim();
+    if (!clean) return;
+    setCurrentText(clean);
+    const res = analyzeTextLocally(clean);
     setAnalysisResult(res);
     setIsInspectorOpen(true);
   };
@@ -54,69 +76,73 @@ export default function MoveIQDashboard() {
     80, 72, 65, 52, 60, 56, 46, 50, 58, 52, 42, 38, 32, 42, 48, 40, 34, 45, 50
   ];
 
-  const tableRows = [
+  const inferenceRows: TableRowItem[] = [
     {
       id: '#875412903',
-      assignedTo: 'Clara Jensen',
-      fromFlag: '🇩🇪',
-      fromCity: 'Munich, DE',
-      toFlag: '🇳🇱',
-      toCity: 'Rotterdam, NL',
-      vehicle: 'Volvo FH16',
-      delivery: '05 Oct, 2025',
-      status: 'In transit',
-      statusColor: 'bg-amber-500',
-      sampleUtterance: 'I am tried due to work in night',
+      speaker: 'Clara Jensen',
+      utterance: 'I am tried due to work in night',
+      subEmotion: 'Exhaustion & Depletion',
+      primaryEmotion: 'sadness',
+      cause: 'work in night',
+      intent: 'Sharing Exhaustion & Venting Strain',
+      statusDot: 'bg-amber-500',
+      valence: -0.45,
+      arousal: 0.15,
     },
     {
       id: '#458729654',
-      assignedTo: 'Michael Torres',
-      fromFlag: '🇵🇱',
-      fromCity: 'Warsaw, PL',
-      toFlag: '🇦🇹',
-      toCity: 'Vienna, AT',
-      vehicle: 'Mercedes Actros',
-      delivery: '05 Oct, 2025',
-      status: 'Delivered',
-      statusColor: 'bg-emerald-500',
-      sampleUtterance: 'I finally received the promotion and dream offer!',
+      speaker: 'Michael Torres',
+      utterance: 'I finally received the promotion and dream offer!',
+      subEmotion: 'Triumph & Euphoric Relief',
+      primaryEmotion: 'joy',
+      cause: 'promotion & effort',
+      intent: 'Celebrating Personal Triumph',
+      statusDot: 'bg-emerald-500',
+      valence: 0.92,
+      arousal: 0.85,
     },
     {
       id: '#913562478',
-      assignedTo: 'Sofia Ricci',
-      fromFlag: '🇨🇿',
-      fromCity: 'Prague, CZ',
-      toFlag: '🇨🇭',
-      toCity: 'Zurich, CH',
-      vehicle: 'MAN TGX',
-      delivery: '05 Oct, 2025',
-      status: 'Picked up',
-      statusColor: 'bg-slate-400',
-      sampleUtterance: 'Why did you cancel the presentation without asking me?',
+      speaker: 'Sofia Ricci',
+      utterance: 'Why did you cancel the presentation without asking me?',
+      subEmotion: 'Friction & Impatience',
+      primaryEmotion: 'anger',
+      cause: 'unilateral cancellation',
+      intent: 'Venting Frustration against Obstacles',
+      statusDot: 'bg-rose-500',
+      valence: -0.60,
+      arousal: 0.70,
     },
     {
       id: '#324561327',
-      assignedTo: 'Olivia Novak',
-      fromFlag: '🇪🇸',
-      fromCity: 'Madrid, ES',
-      toFlag: '🇫🇷',
-      toCity: 'Lyon, FR',
-      vehicle: 'Scania R500',
-      delivery: '15 Sep, 2025',
-      status: 'In transit',
-      statusColor: 'bg-amber-500',
-      sampleUtterance: 'I feel so helpless and burdened by these impossible deadlines.',
+      speaker: 'Olivia Novak',
+      utterance: 'I feel so helpless and burdened by all these pending tasks.',
+      subEmotion: 'Social Disconnection & Despair',
+      primaryEmotion: 'sadness',
+      cause: 'task backlog overload',
+      intent: 'Reaching Out for Social Empathy',
+      statusDot: 'bg-blue-500',
+      valence: -0.75,
+      arousal: 0.25,
     },
   ];
 
+  const filteredRows = inferenceRows.filter((r) => {
+    if (searchVal) {
+      const q = searchVal.toLowerCase();
+      return r.utterance.toLowerCase().includes(q) || r.speaker.toLowerCase().includes(q) || r.subEmotion.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
   return (
-    <div className="min-h-screen bg-[#d7dde5] py-4 px-2 sm:px-4 lg:px-6 flex items-center justify-center font-sans">
+    <div className="min-h-screen bg-[#d7dde5] py-4 px-2 sm:px-4 lg:px-6 flex items-center justify-center font-sans antialiased text-slate-900 selection:bg-slate-900 selection:text-white">
       {/* Tablet Mockup Bezel Outer Frame */}
       <div className="w-full max-w-[1360px] bg-[#1a1c22] rounded-[36px] sm:rounded-[44px] p-3 sm:p-5 shadow-2xl border-4 border-[#2d3039] relative">
         {/* Left Bezel Camera dot */}
         <div className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#353842] border border-[#484b57] hidden sm:block"></div>
 
-        {/* Tablet Screen Surface */}
+        {/* Tablet Screen Surface (Soft #eff2f6 Canvas) */}
         <div className="w-full bg-[#eff2f6] rounded-[26px] sm:rounded-[34px] overflow-hidden p-4 sm:p-6 lg:p-7 space-y-5 text-slate-900 relative">
           
           {/* TOP NAVIGATION BAR */}
@@ -127,11 +153,11 @@ export default function MoveIQDashboard() {
                 Q
               </div>
               <span className="text-base font-extrabold tracking-tight text-slate-900">
-                MoveIQ
+                AuraIQ
               </span>
             </div>
 
-            {/* Center Segmented Floating Black Pill */}
+            {/* Center Segmented Floating Black Pill Menu */}
             <div className="flex items-center bg-[#121316] text-white p-1 rounded-2xl shadow-md border border-black/10">
               <button
                 onClick={() => setActiveTab('dashboard')}
@@ -146,45 +172,52 @@ export default function MoveIQDashboard() {
               </button>
 
               <button
-                onClick={() => setActiveTab('box')}
+                onClick={() => setActiveTab('batch')}
+                title="Batch Processing Studio"
                 className={`p-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'box' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
+                  activeTab === 'batch' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Box className="w-3.5 h-3.5" />
+                <Layers className="w-3.5 h-3.5" />
               </button>
 
               <button
-                onClick={() => setActiveTab('truck')}
+                onClick={() => setActiveTab('circumplex')}
+                title="Affect Circumplex 2D Model"
                 className={`p-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'truck' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
+                  activeTab === 'circumplex' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Truck className="w-3.5 h-3.5" />
+                <Compass className="w-3.5 h-3.5" />
               </button>
 
               <button
-                onClick={() => setActiveTab('wallet')}
+                onClick={() => setActiveTab('narrative')}
+                title="Narrative Emotion Flow"
                 className={`p-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'wallet' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
+                  activeTab === 'narrative' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Wallet className="w-3.5 h-3.5" />
+                <Activity className="w-3.5 h-3.5" />
               </button>
 
               <button
-                onClick={() => setActiveTab('stats')}
+                onClick={() => setActiveTab('lab')}
+                title="ML Upgrade Lab"
                 className={`p-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'stats' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
+                  activeTab === 'lab' ? 'bg-[#22252c] text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <TrendingUp className="w-3.5 h-3.5" />
+                <Cpu className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Right Notification & Profile */}
             <div className="flex items-center gap-3">
-              <button className="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-700 hover:text-black transition-colors relative">
+              <button
+                onClick={() => setIsInspectorOpen(true)}
+                className="w-9 h-9 rounded-full bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-700 hover:text-black transition-colors relative"
+              >
                 <Bell className="w-4 h-4" />
                 <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-amber-500"></span>
               </button>
@@ -195,422 +228,510 @@ export default function MoveIQDashboard() {
                 </div>
                 <div className="hidden md:block text-left">
                   <div className="text-xs font-extrabold text-slate-900 leading-tight">Kent Torres</div>
-                  <div className="text-[10px] text-slate-400 font-medium leading-tight">Admin</div>
+                  <div className="text-[10px] text-slate-400 font-medium leading-tight">Lead AI Admin</div>
                 </div>
               </div>
             </div>
           </nav>
 
-          {/* MAIN TWO-COLUMN DASHBOARD GRID */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            
-            {/* LEFT COLUMN: Performance Overview & Olive Truck Card (4 cols) */}
-            <div className="lg:col-span-4 space-y-4">
+          {/* TAB 1: DASHBOARD VIEW */}
+          {activeTab === 'dashboard' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
               
-              {/* Card 1: Fleet Performance Overview */}
-              <div className="bg-white rounded-3xl p-5 border border-slate-200/70 shadow-sm space-y-4">
-                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                  Fleet performance overview
-                </h3>
+              {/* LEFT COLUMN: Affect Performance Overview & Olive Card (4 cols) */}
+              <div className="lg:col-span-4 space-y-4">
+                
+                {/* Card 1: Affect Performance Overview */}
+                <div className="bg-white rounded-3xl p-5 border border-slate-200/70 shadow-sm space-y-4">
+                  <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                    Affect performance overview
+                  </h3>
 
-                {/* 2x2 Metric Grid */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
-                    <div className="text-[11px] text-slate-400 font-medium">Utilization</div>
-                    <div className="text-base font-extrabold text-slate-900 mt-0.5">78%</div>
+                  {/* 2x2 Metric Grid */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
+                      <div className="text-[11px] text-slate-400 font-medium">Confidence</div>
+                      <div className="text-base font-extrabold text-slate-900 mt-0.5">
+                        {Math.round(analysisResult.confidence * 100)}%
+                      </div>
+                    </div>
+
+                    <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
+                      <div className="text-[11px] text-slate-400 font-medium">Arousal Level</div>
+                      <div className="text-base font-extrabold text-slate-900 mt-0.5">
+                        {analysisResult.affect_coordinates.arousal} <span className="text-[10px] text-slate-400 font-normal">low</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
+                      <div className="text-[11px] text-slate-400 font-medium">Valence Ratio</div>
+                      <div className="text-base font-extrabold text-slate-900 mt-0.5">
+                        {analysisResult.affect_coordinates.valence > 0 ? `+${analysisResult.affect_coordinates.valence}` : analysisResult.affect_coordinates.valence}
+                      </div>
+                    </div>
+
+                    <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
+                      <div className="text-[11px] text-slate-400 font-medium">Inference Latency</div>
+                      <div className="text-base font-extrabold text-slate-900 mt-0.5">18 ms</div>
+                    </div>
                   </div>
 
-                  <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
-                    <div className="text-[11px] text-slate-400 font-medium">Fuel Efficiency</div>
-                    <div className="text-base font-extrabold text-slate-900 mt-0.5">8.7 mpg</div>
+                  {/* Driver Row: Lead Scientist & Rating */}
+                  <div className="bg-[#f8fafc] p-2.5 rounded-2xl flex items-center justify-between border border-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs overflow-hidden font-bold">
+                        <span>{analysisResult.emoji}</span>
+                      </div>
+                      <div>
+                        <div className="text-xs font-extrabold text-slate-900 leading-tight">
+                          {analysisResult.dominant_label}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-medium leading-tight truncate max-w-[130px]">
+                          {analysisResult.sub_emotion}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className="bg-[#86efac] text-[#14532d] text-xs font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      ★ 9.7
+                    </span>
                   </div>
 
-                  <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
-                    <div className="text-[11px] text-slate-400 font-medium">On-time Rate</div>
-                    <div className="text-base font-extrabold text-slate-900 mt-0.5">92%</div>
+                  {/* Causal Trigger Row */}
+                  <div
+                    onClick={() => setIsInspectorOpen(true)}
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                        <Zap className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 mr-1.5">Causal Trigger:</span>
+                        <span className="text-xs text-slate-600 font-medium capitalize">
+                          &ldquo;{analysisResult.components.cause || 'work in night'}&rdquo;
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
                   </div>
 
-                  <div className="bg-[#f8fafc] p-3 rounded-2xl border border-slate-100">
-                    <div className="text-[11px] text-slate-400 font-medium">Idle Time</div>
-                    <div className="text-base font-extrabold text-slate-900 mt-0.5">1h 12m</div>
+                  {/* Chrono Stressor Row */}
+                  <div
+                    onClick={() => setIsInspectorOpen(true)}
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                        <Moon className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 mr-1.5">Chrono Stressor:</span>
+                        <span className="text-xs text-slate-600 font-medium capitalize">
+                          &ldquo;{analysisResult.components.temporal_context || 'nocturnal shift'}&rdquo;
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
                   </div>
                 </div>
 
-                {/* Driver Row */}
-                <div className="bg-[#f8fafc] p-2.5 rounded-2xl flex items-center justify-between border border-slate-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs overflow-hidden font-bold">
-                      👱🏼
-                    </div>
-                    <div>
-                      <div className="text-xs font-extrabold text-slate-900 leading-tight">Lukas Weber</div>
-                      <div className="text-[10px] text-slate-400 font-medium leading-tight">Top driver</div>
-                    </div>
+                {/* Card 2: The Iconic Olive Cognitive Card */}
+                <div className="bg-[#d7e9b0] rounded-3xl p-5 border border-[#c4dc8c] flex flex-col justify-between text-[#1a2e05] shadow-sm relative overflow-hidden">
+                  <CognitiveWaveIllustration />
+
+                  <div className="mt-2 space-y-1">
+                    <h4 className="text-base font-extrabold tracking-tight text-[#1a2e05]">
+                      Utterance on the stream
+                    </h4>
+                    <p className="text-xs text-[#3f571b] font-medium leading-relaxed">
+                      Deconstruct affect & intent with real-time tracking
+                    </p>
                   </div>
 
-                  <span className="bg-[#86efac] text-[#14532d] text-xs font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                    ★ 9.7
-                  </span>
-                </div>
-
-                {/* Vehicles Row */}
-                <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
-                      <Truck className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 mr-1.5">4 vehicles</span>
-                      <span className="text-xs text-slate-500 font-medium">Needing service</span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
-                </div>
-
-                {/* Incidents Row */}
-                <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
-                      <AlertOctagon className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 mr-1.5">3 minor</span>
-                      <span className="text-xs text-slate-500 font-medium">Incidents this week</span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 transition-colors" />
+                  <button
+                    onClick={() => setIsInspectorOpen(true)}
+                    className="mt-4 w-full py-2.5 px-4 rounded-xl bg-black text-white text-xs font-bold hover:bg-slate-900 transition-all flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <span>Analyze utterance</span>
+                    <Crosshair className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Card 2: The Iconic Olive Vehicle Card */}
-              <div className="bg-[#d7e9b0] rounded-3xl p-5 border border-[#c4dc8c] flex flex-col justify-between text-[#1a2e05] shadow-sm relative overflow-hidden">
-                {/* Truck Vector Illustration matching the reference photo */}
-                <TruckIllustration />
+              {/* RIGHT COLUMN: Dark Bento Card + Recent Inferences Table (8 cols) */}
+              <div className="lg:col-span-8 space-y-5">
+                
+                {/* Top Dark Bento Card */}
+                <div className="bg-[#121316] rounded-3xl p-6 md:p-7 text-white shadow-xl space-y-6">
+                  
+                  {/* Top Search & Actions Row */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* Search input */}
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={searchVal}
+                        onChange={(e) => setSearchVal(e.target.value)}
+                        placeholder="Search utterance, sentiment, or intent..."
+                        className="w-full bg-[#1b1e24] border border-white/5 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-white/20 transition-all"
+                      />
+                    </div>
 
-                <div className="mt-2 space-y-1">
-                  <h4 className="text-base font-extrabold tracking-tight text-[#1a2e05]">
-                    Vehicle on the road
-                  </h4>
-                  <p className="text-xs text-[#3f571b] font-medium leading-relaxed">
-                    Expedite cargo fleet with real-time tracking
+                    {/* Export & Add Analysis buttons */}
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        onClick={() => {
+                          const jsonStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(analysisResult, null, 2));
+                          const dl = document.createElement('a');
+                          dl.setAttribute('href', jsonStr);
+                          dl.setAttribute('download', `auraiq_analysis_${Date.now()}.json`);
+                          document.body.appendChild(dl);
+                          dl.click();
+                          document.body.removeChild(dl);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-transparent hover:bg-white/5 text-xs font-bold text-slate-300 hover:text-white transition-all"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Export</span>
+                      </button>
+
+                      <button
+                        onClick={() => setIsInspectorOpen(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-black text-xs font-extrabold transition-all shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-black stroke-[3]" />
+                        <span>Add new analysis</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Left/Right Split: Trajectory Bars + Semicircular Arc Gauge */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end pt-1">
+                    
+                    {/* Left Side: Affect Saliency Performance Bars (7 cols) */}
+                    <div className="md:col-span-7 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-extrabold text-white tracking-tight">
+                          Fulfillment Performance
+                        </h4>
+                        <div className="flex items-center gap-2 text-slate-400">
+                          <button className="p-1 rounded hover:bg-white/5">
+                            <Calendar className="w-3.5 h-3.5" />
+                          </button>
+                          <button className="p-1 rounded hover:bg-white/5">
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Month labels */}
+                      <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
+                        <span>Feb</span>
+                        <span>Mar</span>
+                        <span>Apr</span>
+                        <span className="text-white font-bold">May</span>
+                        <span>Jun</span>
+                        <span>Jul</span>
+                        <span>Aug</span>
+                        <span>Sep</span>
+                        <span>Oct</span>
+                        <span>Nov</span>
+                      </div>
+
+                      {/* Dense Histogram Bars with 87% Highlight */}
+                      <div className="relative h-24 flex items-end justify-between gap-1 pt-6 px-0.5">
+                        {frequencyBars.map((height, idx) => {
+                          const isPeak = idx === 16;
+                          return (
+                            <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end relative">
+                              {isPeak && (
+                                <>
+                                  <div className="absolute -top-6 px-1.5 py-0.5 rounded-full bg-white text-black font-black text-[9px] shadow-lg z-10 whitespace-nowrap">
+                                    87%
+                                  </div>
+                                  <div className="absolute top-0 bottom-0 w-px bg-white z-0"></div>
+                                </>
+                              )}
+                              <div
+                                style={{ height: `${height}%` }}
+                                className={`w-full rounded-t-sm transition-all ${
+                                  isPeak
+                                    ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]'
+                                    : 'bg-[#292c35] hover:bg-slate-500'
+                                }`}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right Side: Primary State Overview & Semicircular Arc Gauge (5 cols) */}
+                    <div className="md:col-span-5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-400">
+                          Sales Overview
+                        </span>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <SlidersHorizontal className="w-3 h-3" />
+                          <ArrowUpDown className="w-3 h-3" />
+                        </div>
+                      </div>
+
+                      {/* Big Metric */}
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                          $716,084
+                        </span>
+                        <span className="text-[11px] font-bold text-emerald-400 flex items-center">
+                          32.2% <ArrowUpRight className="w-3 h-3" />
+                        </span>
+                      </div>
+
+                      {/* Semicircular Gauge & Emotion Legend List */}
+                      <div className="flex items-center gap-3 pt-1">
+                        {/* SVG Gauge */}
+                        <div className="relative w-36 h-20 shrink-0 flex items-end justify-center">
+                          <svg viewBox="0 0 160 85" className="w-full h-full overflow-visible">
+                            {/* Segment 1: Forest Green (Sadness/Exhaustion 38%) */}
+                            <path
+                              d="M 15 80 A 65 65 0 0 1 55 28"
+                              fill="none"
+                              stroke="#10b981"
+                              strokeWidth="11"
+                              strokeLinecap="round"
+                            />
+                            {/* Segment 2: Lime (Neutral/Weariness 27%) */}
+                            <path
+                              d="M 57 26 A 65 65 0 0 1 105 26"
+                              fill="none"
+                              stroke="#a3e635"
+                              strokeWidth="11"
+                            />
+                            {/* Segment 3: Blue/Purple (Fear/Anxiety 22%) */}
+                            <path
+                              d="M 107 28 A 65 65 0 0 1 138 55"
+                              fill="none"
+                              stroke="#818cf8"
+                              strokeWidth="11"
+                            />
+                            {/* Segment 4: Lavender (Anger/Frustration 14%) */}
+                            <path
+                              d="M 139 57 A 65 65 0 0 1 145 80"
+                              fill="none"
+                              stroke="#c084fc"
+                              strokeWidth="11"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+
+                        {/* Legend List matching Finland/Sweden/Iceland layout */}
+                        <div className="space-y-1 text-[10px] font-semibold text-slate-300">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-sm bg-emerald-500"></span>
+                            <span>Finland</span>
+                            <span className="text-slate-400 font-mono">28%</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-sm bg-lime-400"></span>
+                            <span>Sweden</span>
+                            <span className="text-slate-400 font-mono">27%</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-sm bg-indigo-400"></span>
+                            <span>Iceland</span>
+                            <span className="text-slate-400 font-mono">22%</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-sm bg-purple-400"></span>
+                            <span>Estonia</span>
+                            <span className="text-slate-400 font-mono">14%</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-sm bg-amber-400"></span>
+                            <span>Other</span>
+                            <span className="text-slate-400 font-mono">9%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom White Inferences Table ("Recent Inferences 264") */}
+                <div className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm space-y-4">
+                  {/* Header & Filter Pills */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                        Orders
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono text-xs font-bold">
+                        264
+                      </span>
+                    </div>
+
+                    {/* Filter Pills matching MoveIQ segmented pills */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['Pending 70', 'Responded 85', 'Assigned 53', 'Completed 56'].map((pill) => {
+                        const isSelected = activeFilter === pill.split(' ')[0];
+                        return (
+                          <button
+                            key={pill}
+                            onClick={() => setActiveFilter(pill.split(' ')[0])}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                              isSelected
+                                ? 'bg-black text-white shadow-sm'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {pill}
+                          </button>
+                        );
+                      })}
+
+                      <button className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 ml-1">
+                        <ArrowUpDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Clean Minimalist Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                          <th className="pb-3 pr-3">Order ID</th>
+                          <th className="pb-3 px-3">Order assigned to</th>
+                          <th className="pb-3 px-3">Route / Input Utterance</th>
+                          <th className="pb-3 px-3">Nuance</th>
+                          <th className="pb-3 px-3">Causal Trigger</th>
+                          <th className="pb-3 px-3">Status</th>
+                          <th className="pb-3 pl-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredRows.map((row) => (
+                          <tr
+                            key={row.id}
+                            onClick={() => runAnalysis(row.utterance)}
+                            className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
+                          >
+                            <td className="py-4 pr-3 font-mono font-bold text-slate-900">
+                              {row.id}
+                            </td>
+
+                            <td className="py-4 px-3 font-bold text-slate-800 whitespace-nowrap">
+                              {row.speaker}
+                            </td>
+
+                            <td className="py-4 px-3 max-w-[260px]">
+                              <div className="font-semibold text-slate-900 truncate">
+                                &ldquo;{row.utterance}&rdquo;
+                              </div>
+                            </td>
+
+                            <td className="py-4 px-3 whitespace-nowrap">
+                              <span className="font-bold text-slate-800">
+                                {row.subEmotion}
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-3 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 font-medium text-[11px]">
+                                {row.cause}
+                              </span>
+                            </td>
+
+                            <td className="py-4 px-3 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 font-semibold text-slate-700">
+                                <span className={`w-2 h-2 rounded-full ${row.statusDot}`}></span>
+                                <span>{row.intent}</span>
+                              </div>
+                            </td>
+
+                            <td className="py-4 pl-3 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={() => runAnalysis(row.utterance)}
+                                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-700 hover:text-black transition-all shadow-sm"
+                                >
+                                  See more
+                                </button>
+                                <button className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-500 transition-colors">
+                                  <MoreHorizontal className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: BATCH PROCESSING & FILE EXPORT STUDIO (Matching MoveIQ theme) */}
+          {activeTab === 'batch' && <BatchStudio />}
+
+          {/* TAB 3: AFFECT CIRCUMPLEX & EMOTION RADAR */}
+          {activeTab === 'circumplex' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                    Affect Circumplex & 7-Axis Radar Visualization
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    Continuous 2D Coordinates for &ldquo;<strong className="text-slate-800">{currentText}</strong>&rdquo;
                   </p>
                 </div>
 
                 <button
                   onClick={() => setIsInspectorOpen(true)}
-                  className="mt-4 w-full py-2.5 px-4 rounded-xl bg-black text-white text-xs font-bold hover:bg-slate-900 transition-all flex items-center justify-center gap-2 shadow-sm"
+                  className="px-4 py-2 rounded-xl bg-black text-white text-xs font-bold hover:bg-slate-900 transition-all shadow-sm"
                 >
-                  <span>Track vehicle</span>
-                  <Crosshair className="w-3.5 h-3.5" />
+                  Analyze Different Utterance
                 </button>
               </div>
-            </div>
 
-            {/* RIGHT COLUMN: Dark Bento Card + Orders Table (8 cols) */}
-            <div className="lg:col-span-8 space-y-5">
-              
-              {/* Top Dark Bento Card */}
-              <div className="bg-[#121316] rounded-3xl p-6 md:p-7 text-white shadow-xl space-y-6">
-                
-                {/* Top Search & Actions Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  {/* Search input */}
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={searchVal}
-                      onChange={(e) => setSearchVal(e.target.value)}
-                      placeholder="Search order..."
-                      className="w-full bg-[#1b1e24] border border-white/5 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-white/20 transition-all"
-                    />
-                  </div>
-
-                  {/* Export & Add Shipment buttons */}
-                  <div className="flex items-center gap-2.5">
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-transparent hover:bg-white/5 text-xs font-bold text-slate-300 hover:text-white transition-all">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Export</span>
-                    </button>
-
-                    <button
-                      onClick={() => setIsInspectorOpen(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-black text-xs font-extrabold transition-all shadow-sm"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-black stroke-[3]" />
-                      <span>Add new shipment</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Left/Right Split: Fulfillment Performance + Sales Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end pt-1">
-                  
-                  {/* Left Side: Fulfillment Performance Bars (7 cols) */}
-                  <div className="md:col-span-7 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-extrabold text-white tracking-tight">
-                        Fulfillment Performance
-                      </h4>
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <button className="p-1 rounded hover:bg-white/5">
-                          <Calendar className="w-3.5 h-3.5" />
-                        </button>
-                        <button className="p-1 rounded hover:bg-white/5">
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Month labels */}
-                    <div className="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
-                      <span>Feb</span>
-                      <span>Mar</span>
-                      <span>Apr</span>
-                      <span className="text-white font-bold">May</span>
-                      <span>Jun</span>
-                      <span>Jul</span>
-                      <span>Aug</span>
-                      <span>Sep</span>
-                      <span>Oct</span>
-                      <span>Nov</span>
-                    </div>
-
-                    {/* Dense Histogram Bars with 87% Highlight */}
-                    <div className="relative h-24 flex items-end justify-between gap-1 pt-6 px-0.5">
-                      {frequencyBars.map((height, idx) => {
-                        const isPeak = idx === 16;
-                        return (
-                          <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end relative">
-                            {isPeak && (
-                              <>
-                                <div className="absolute -top-6 px-1.5 py-0.5 rounded-full bg-white text-black font-black text-[9px] shadow-lg z-10">
-                                  87%
-                                </div>
-                                <div className="absolute top-0 bottom-0 w-px bg-white z-0"></div>
-                              </>
-                            )}
-                            <div
-                              style={{ height: `${height}%` }}
-                              className={`w-full rounded-t-sm transition-all ${
-                                isPeak
-                                  ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]'
-                                  : 'bg-[#292c35] hover:bg-slate-500'
-                              }`}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Right Side: Sales Overview & Semicircular Arc Gauge (5 cols) */}
-                  <div className="md:col-span-5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-slate-400">
-                        Sales Overview
-                      </span>
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                        <SlidersHorizontal className="w-3 h-3" />
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </div>
-
-                    {/* Big Metric */}
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                        $716,084
-                      </span>
-                      <span className="text-[11px] font-bold text-emerald-400 flex items-center">
-                        32.2% <ArrowUpRight className="w-3 h-3" />
-                      </span>
-                    </div>
-
-                    {/* Semicircular Gauge & Country Legend List */}
-                    <div className="flex items-center gap-3 pt-1">
-                      {/* SVG Gauge */}
-                      <div className="relative w-36 h-20 shrink-0 flex items-end justify-center">
-                        <svg viewBox="0 0 160 85" className="w-full h-full overflow-visible">
-                          {/* Segment 1: Forest Green (Finland 28%) */}
-                          <path
-                            d="M 15 80 A 65 65 0 0 1 55 28"
-                            fill="none"
-                            stroke="#10b981"
-                            strokeWidth="11"
-                            strokeLinecap="round"
-                          />
-                          {/* Segment 2: Lime (Sweden 27%) */}
-                          <path
-                            d="M 57 26 A 65 65 0 0 1 105 26"
-                            fill="none"
-                            stroke="#a3e635"
-                            strokeWidth="11"
-                          />
-                          {/* Segment 3: Blue/Purple (Iceland 22%) */}
-                          <path
-                            d="M 107 28 A 65 65 0 0 1 138 55"
-                            fill="none"
-                            stroke="#818cf8"
-                            strokeWidth="11"
-                          />
-                          {/* Segment 4: Lavender (Estonia 14%) */}
-                          <path
-                            d="M 139 57 A 65 65 0 0 1 145 80"
-                            fill="none"
-                            stroke="#c084fc"
-                            strokeWidth="11"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </div>
-
-                      {/* Legend List matching Finland/Sweden/Iceland */}
-                      <div className="space-y-1 text-[10px] font-semibold text-slate-300">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-sm bg-emerald-500"></span>
-                          <span>Finland</span>
-                          <span className="text-slate-400 font-mono">28%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-sm bg-lime-400"></span>
-                          <span>Sweden</span>
-                          <span className="text-slate-400 font-mono">27%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-sm bg-indigo-400"></span>
-                          <span>Iceland</span>
-                          <span className="text-slate-400 font-mono">22%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-sm bg-purple-400"></span>
-                          <span>Estonia</span>
-                          <span className="text-slate-400 font-mono">14%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-sm bg-amber-400"></span>
-                          <span>Other</span>
-                          <span className="text-slate-400 font-mono">9%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom White Orders Table */}
-              <div className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm space-y-4">
-                {/* Header & Filter Pills */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
-                      Orders
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono text-xs font-bold">
-                      264
-                    </span>
-                  </div>
-
-                  {/* Filter Pills matching MoveIQ segmented pills */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {['Pending 70', 'Responded 85', 'Assigned 53', 'Completed 56'].map((pill) => {
-                      const isSelected = orderFilter === pill.split(' ')[0];
-                      return (
-                        <button
-                          key={pill}
-                          onClick={() => setOrderFilter(pill.split(' ')[0])}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                            isSelected
-                              ? 'bg-black text-white shadow-sm'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
-                        >
-                          {pill}
-                        </button>
-                      );
-                    })}
-
-                    <button className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 ml-1">
-                      <ArrowUpDown className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* The Clean Minimalist Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                        <th className="pb-3 pr-3">Order ID</th>
-                        <th className="pb-3 px-3">Order assigned to</th>
-                        <th className="pb-3 px-3">Route</th>
-                        <th className="pb-3 px-3">Vehicle</th>
-                        <th className="pb-3 px-3">Est. delivery</th>
-                        <th className="pb-3 px-3">Status</th>
-                        <th className="pb-3 pl-3 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {tableRows.map((row) => (
-                        <tr
-                          key={row.id}
-                          onClick={() => runAnalysis(row.sampleUtterance)}
-                          className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
-                        >
-                          <td className="py-4 pr-3 font-mono font-bold text-slate-900">
-                            {row.id}
-                          </td>
-
-                          <td className="py-4 px-3 font-bold text-slate-800 whitespace-nowrap">
-                            {row.assignedTo}
-                          </td>
-
-                          {/* Route with Flag pins and curved arrow */}
-                          <td className="py-4 px-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm">{row.fromFlag}</span>
-                              <span className="font-semibold text-slate-800 text-[11px]">{row.fromCity}</span>
-                              <span className="text-slate-400 font-bold px-1">↳</span>
-                              <span className="text-sm">{row.toFlag}</span>
-                              <span className="font-semibold text-slate-800 text-[11px]">{row.toCity}</span>
-                            </div>
-                          </td>
-
-                          <td className="py-4 px-3 text-slate-600 font-medium whitespace-nowrap">
-                            {row.vehicle}
-                          </td>
-
-                          <td className="py-4 px-3 text-slate-500 whitespace-nowrap">
-                            {row.delivery}
-                          </td>
-
-                          <td className="py-4 px-3 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                              <span className={`w-2 h-2 rounded-full ${row.statusColor}`}></span>
-                              <span>{row.status}</span>
-                            </div>
-                          </td>
-
-                          <td className="py-4 pl-3 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => runAnalysis(row.sampleUtterance)}
-                                className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-bold text-slate-700 hover:text-black transition-all shadow-sm"
-                              >
-                                See more
-                              </button>
-                              <button className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-500 transition-colors">
-                                <MoreHorizontal className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <AffectCircumplex
+                  coordinates={analysisResult.affect_coordinates}
+                  subEmotion={analysisResult.sub_emotion}
+                  dominantColor={analysisResult.color}
+                />
+                <EmotionRadar
+                  scores={analysisResult.scores}
+                  dominantEmotion={analysisResult.dominant_emotion}
+                />
               </div>
             </div>
-          </div>
+          )}
+
+          {/* TAB 4: NARRATIVE FLOW TRACKER */}
+          {activeTab === 'narrative' && (
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm">
+              <NarrativeFlowView
+                onAnalyzeSentence={(sent) => {
+                  runAnalysis(sent);
+                  setActiveTab('dashboard');
+                }}
+              />
+            </div>
+          )}
+
+          {/* TAB 5: ML UPGRADE LAB */}
+          {activeTab === 'lab' && (
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/70 shadow-sm">
+              <ArchitectureLab />
+            </div>
+          )}
 
           {/* FLOATING ACTION KEY MODE PILL (Centered at bottom) */}
           <div className="flex justify-center pt-2">
@@ -629,7 +750,7 @@ export default function MoveIQDashboard() {
         </div>
       </div>
 
-      {/* COGNITIVE AFFECT DECONSTRUCTION MODAL (Opened by "Track Vehicle", "Action key mode", or "See more") */}
+      {/* COGNITIVE AFFECT DECONSTRUCTION MODAL (Opened by "See more", "Action key mode", etc.) */}
       {isInspectorOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-3xl bg-white rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-200 relative max-h-[90vh] overflow-y-auto">
@@ -687,7 +808,10 @@ export default function MoveIQDashboard() {
                 ].map((sample, sIdx) => (
                   <button
                     key={sIdx}
-                    onClick={() => runAnalysis(sample)}
+                    onClick={() => {
+                      setInputText(sample);
+                      runAnalysis(sample);
+                    }}
                     className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
                   >
                     {sample}
@@ -696,7 +820,7 @@ export default function MoveIQDashboard() {
               </div>
             </div>
 
-            {/* Analysis Output */}
+            {/* Dynamic Analysis Output */}
             {analysisResult && (
               <div className="space-y-4 pt-4 border-t border-slate-100">
                 {/* Result Hero */}
@@ -726,8 +850,8 @@ export default function MoveIQDashboard() {
                 {/* 3 Pillars: Causal Trigger, Chrono Stress, Intent */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="bg-amber-50/80 p-3.5 rounded-2xl border border-amber-200/60">
-                    <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
-                      Causal Antecedent
+                    <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" /> Causal Antecedent
                     </div>
                     <div className="text-sm font-extrabold text-amber-950 mt-1">
                       &ldquo;{analysisResult.components.cause || 'work in night'}&rdquo;
@@ -738,8 +862,8 @@ export default function MoveIQDashboard() {
                   </div>
 
                   <div className="bg-blue-50/80 p-3.5 rounded-2xl border border-blue-200/60">
-                    <div className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">
-                      Circadian Stressor
+                    <div className="text-[10px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" /> Circadian Stressor
                     </div>
                     <div className="text-sm font-extrabold text-blue-950 mt-1">
                       &ldquo;{analysisResult.components.temporal_context || 'nocturnal shift'}&rdquo;
@@ -750,8 +874,8 @@ export default function MoveIQDashboard() {
                   </div>
 
                   <div className="bg-purple-50/80 p-3.5 rounded-2xl border border-purple-200/60">
-                    <div className="text-[10px] font-bold text-purple-800 uppercase tracking-wider">
-                      Communicative Intent
+                    <div className="text-[10px] font-bold text-purple-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Target className="w-3.5 h-3.5" /> Communicative Intent
                     </div>
                     <div className="text-sm font-extrabold text-purple-950 mt-1">
                       {analysisResult.intent.name}
